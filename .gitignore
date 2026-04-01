@@ -1,0 +1,37 @@
+# Secrets
+.env
+*.pem
+*.key
+
+# Python virtual environment
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Fine-tuning checkpoints (large files)
+backend/fine_tuning/checkpoints/
+backend/fine_tuning/data/*.jsonl
+
+# Node.js
+frontend/node_modules/
+frontend/dist/
+
+# AWS / Lambda artifacts
+*.zip
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+logs/
