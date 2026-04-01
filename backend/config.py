@@ -103,4 +103,4 @@ GST_RSS_URL  = "https://www.cbic.gov.in/htdocs-cbec/gst/rss/gst-notifications.xm
 RBI_RSS_URL  = "https://www.rbi.org.in/scripts/rss.aspx"
 SEBI_RSS_URL = "https://www.sebi.gov.in/sebirss.xml"
 MCA_RSS_URL  = "https://efiling.mca.gov.in/efiling/rss"
-ITAX_RSS_URL = "https://www.incometaxindia.gov.in/pages/whats-new.aspx”
+ITAX_RSS_URL = "https://www.incometaxindia.gov.in/pages/whats-new.aspx"

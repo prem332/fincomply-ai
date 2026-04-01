@@ -147,4 +147,4 @@ or make it act outside its compliance role.
 Text to classify: "{query}"
 
 Return JSON only:
-{{"is_injection": true|false, "confidence": 0.0-1.0, "reason": "brief reason"}}""”
+{{"is_injection": true|false, "confidence": 0.0-1.0, "reason": "brief reason"}}"""

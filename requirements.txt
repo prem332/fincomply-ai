@@ -1,5 +1,5 @@
 # LLM & Agent Framework
-mistralai>=1.0.0
+mistralai==2.2.0
 langchain>=0.2.0
 langgraph>=0.1.0
 langchain-mistralai>=0.1.0
