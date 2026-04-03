@@ -3,36 +3,12 @@
 > **India's Real-Time Financial Regulatory Intelligence System**  
 > Powered by a 3-Agent LangGraph Pipeline · Fine-Tuned Mistral 7B · MCP Tools on AWS Lambda
 
-[
-
-![Live Demo](https://img.shields.io/badge/Live%20Demo-fincomply--ai.duckdns.org-teal?style=for-the-badge)
-
-](https://fincomply-ai.duckdns.org)
-[
-
-![Video Demo](https://img.shields.io/badge/Video%20Demo-Google%20Drive-red?style=for-the-badge&logo=google-drive)
-
-](https://drive.google.com/file/d/1fzgjg6cMu7oh3DAHfR9Pmiw61krvM8KZ/view?usp=drivesdk)
-[
-
-![HuggingFace](https://img.shields.io/badge/Model-prem332%2Ffincomply--mistral--7b-yellow?style=for-the-badge&logo=huggingface)
-
-](https://huggingface.co/prem332/fincomply-mistral-7b)
-[
-
-![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)
-
-](https://python.org)
-[
-
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?style=for-the-badge&logo=fastapi)
-
-](https://fastapi.tiangolo.com)
-[
-
-![LangSmith](https://img.shields.io/badge/Monitored-LangSmith-orange?style=for-the-badge)
-
-](https://smith.langchain.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-fincomply--ai.duckdns.org-teal?style=for-the-badge)](https://fincomply-ai.duckdns.org)
+[![Video Demo](https://img.shields.io/badge/Video%20Demo-Google%20Drive-red?style=for-the-badge&logo=google-drive)](https://drive.google.com/file/d/1fzgjg6cMu7oh3DAHfR9Pmiw61krvM8KZ/view?usp=drivesdk)
+[![HuggingFace](https://img.shields.io/badge/Model-prem332%2Ffincomply--mistral--7b-yellow?style=for-the-badge&logo=huggingface)](https://huggingface.co/prem332/fincomply-mistral-7b)
+[![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+[![LangSmith](https://img.shields.io/badge/Monitored-LangSmith-orange?style=for-the-badge)](https://smith.langchain.com)
 
 > 🌐 **Live URL:** https://fincomply-ai.duckdns.org  
 > ⚠️ **Availability Note:** Live demo may be temporarily offline as AWS EC2 and RDS instances are stopped between demonstrations to manage infrastructure costs. To experience the full system, please watch the [📹 Video Demo](https://drive.google.com/file/d/1fzgjg6cMu7oh3DAHfR9Pmiw61krvM8KZ/view?usp=drivesdk) or view production screenshots in [`results/`](./results/).
@@ -109,9 +85,9 @@ LangSmith Monitoring (Traces · Latency · Errors)
 | Layer | Technology |
 |---|---|
 | **LLM** | Mistral API (`mistral-small-latest`) + Fine-tuned `prem332/fincomply-mistral-7b` |
-| **Fine-tuning** | QLoRA via Unsloth on Google Colab T4 GPU (213 domain examples, loss 0.58) |
+| **Fine-tuning** | QLoRA via Unsloth on Google Colab T4 GPU (213 domain examples, loss 1.93 → 0.58) |
 | **Agent Framework** | LangGraph 3-agent Critique-Revision pipeline |
-| **MCP Tools** | AWS Lambda (Python 3.11) + API Gateway — 5 domain tools |
+| **MCP Tools** | AWS Lambda (Python 3.11) + API Gateway — 5 domain tools, parallel execution |
 | **Vector DB** | pgvector on AWS RDS t3.micro (213 regulatory embeddings, TOP_K=10) |
 | **Embeddings** | `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) |
 | **Hallucination Check** | `cross-encoder/nli-deberta-v3-small` (NLI entailment, pre-loaded at startup) |
@@ -141,7 +117,7 @@ LangSmith Monitoring (Traces · Latency · Errors)
 - **3-Layer Safety Pipeline** — Pattern injection detection → LLM injection classifier → PII guardrail
 - **Parallel MCP Tool Calls** — All 5 domain tools called simultaneously via `ThreadPoolExecutor`
 - **Rule-Based Source Verification** — Only `.gov.in` and `rbi.org.in` URLs accepted
-- **Confidence Scoring** — HIGH (92%) when URL + Circular + Recency all verified
+- **Confidence Scoring** — HIGH (92%) when URL + Circular + Recency all verified; ACCEPT boost applied last after all penalties
 - **NLI Hallucination Check** — Answer entailment verified against source documents at startup
 - **Graceful Fallback** — HuggingFace model → Mistral API → structured error response
 - **Compliance Deadlines** — Urgency-colored deadline alerts in UI
@@ -179,6 +155,28 @@ Real-time pipeline monitoring via LangSmith across 133 production traces:
 
 ---
 
+## Confidence Score Calculation
+
+The confidence score is calculated by the Supervisor Agent using a rule-based system:
+
+**Step 1 — Critic Agent runs 3 checks:**
+- URL Check → Is source from `.gov.in` or `rbi.org.in`?
+- Circular Check → Is there a real government circular number?
+- Recency Check → Is the circular within 10 years (3650 days)?
+
+**Step 2 — Penalties applied first:**
+| Failure | Score Cap |
+|---|---|
+| Source URL not `.gov.in` | 0.40 maximum |
+| Factual accuracy FAIL | 0.45 maximum |
+| Circular outdated | 0.72 maximum |
+| Overall REJECT verdict | 0.35 maximum |
+
+**Step 3 — ACCEPT boost applied last:**  
+When all checks pass → `score = max(score, 0.92)` — overrides all penalties, giving a confidence floor of **92% HIGH**.
+
+---
+
 ## Fine-Tuning
 
 The Mistral 7B model was fine-tuned using **QLoRA** (Quantized LoRA) via Unsloth:
@@ -193,7 +191,7 @@ The Mistral 7B model was fine-tuned using **QLoRA** (Quantized LoRA) via Unsloth
 
 **Agent Usage:**
 - Research Agent → Fine-tuned HF model (falls back to Mistral API)
-- Critic Agent → Mistral API base model (neutral evaluation)
+- Critic Agent → Mistral API base model (intentional — neutral evaluation)
 - Supervisor Agent → Fine-tuned HF model (falls back to Mistral API)
 
 ---
@@ -218,7 +216,7 @@ fincomply-ai-/
 │   │   ├── rbi_tool.py              # RBI data fetcher (rbi.org.in)
 │   │   ├── sebi_tool.py             # SEBI data fetcher (sebi.gov.in)
 │   │   ├── mca_tool.py              # MCA data fetcher (mca.gov.in)
-│   │   └── income_tax_tool.py       # Income Tax data fetcher (incometaxindia.gov.in)
+│   │   └── income_tax_tool.py       # Income Tax data fetcher
 │   ├── database/
 │   │   ├── init_db.py               # pgvector table creation
 │   │   ├── seed_data.py             # 213 regulatory facts (50 per domain)
@@ -236,6 +234,7 @@ fincomply-ai-/
 ├── infra/
 │   ├── ec2_setup.sh                 # EC2 setup script
 │   └── lambda_deploy.sh             # Lambda deployment script
+├── results/                         # Production screenshots
 └── requirements.txt
 ```
 
@@ -293,7 +292,7 @@ Frontend runs at `http://localhost:5173`
 
 For the complete step-by-step AWS deployment guide (IAM, RDS, Lambda, API Gateway, EC2, DuckDNS, HTTPS):
 
-📄 **[AWS Deployment Guide](https://docs.google.com/document/d/1IUpwjVjX7Ixyw7cITi5FQGIu09Ep0ykA/edit?usp=drive_link&ouid=106005894817234320205&rtpof=true&sd=true)**
+📄 **[AWS Deployment Guide](YOUR_GOOGLE_DOCS_LINK_HERE)**
 
 ### Quick Overview
 
